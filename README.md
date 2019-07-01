@@ -70,11 +70,20 @@ Example input:
 # Output
 The path to a file
 
-# Options
+# Structure
 
-| Name       | Optional? | Description                                   | Default    |
-|------------|-----------|-----------------------------------------------|------------|
-| kind       | `true`    | One of `Closable` `NoClosable` `SelfClosable` | `Closable` |
-| children   | `true`    | An array of `ElementDefinition`               |            |
-| attributes | `true`    | A list of HTML attributes                     |            |
-| text       | `true`    | The `innerText`                               |            |
+Each element is specified as an object. The key is the element to render.
+
+`{ "head": {} }`
+
+Available keys and values are:
+
+Key | Description | Optional | Default
+----|-------------|----------|---------
+`kind` | Defines how this element closes (`SelfClosable` `NoClosable` `Closable`) | `true` | `Closable`
+`children` | An array of elements | `true` | 
+`text` | The `innerText` of this element | `true` |
+
+As well as the above, the `attributes` key can also be passed. This is an object list of HTMLElement attributes
+
+`{ head: { attributes: { id: '1', class: ['c1', 'c2'] } }`
