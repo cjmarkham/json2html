@@ -1,7 +1,14 @@
+import { isBoolean } from 'util';
+
 enum ClosableKind {
   Closable = "Closable",
   SelfClosable = "SelfClosable",
   NoClosable = "NoClosable"
+}
+
+interface OutputFormat {
+  depth: number
+  element: string
 }
 
 interface Attributes {
@@ -21,7 +28,7 @@ interface HTMLElement {
 }
 
 export default class JSON2HTML {
-  output: string[] = []
+  output: OutputFormat[] = []
   json: string
 
   constructor(json: string) {
@@ -30,17 +37,15 @@ export default class JSON2HTML {
 
   run(): JSON2HTML {
     const map = JSON.parse(this.json)
-    for (const el of map) {
-      for (const name in el) {
-        this.renderElement(name, el[name])
-      }
+    for (const name in map) {
+      this.renderElement(name, map[name])
     }
 
     return this
   }
 
   private renderElement(name: string, element: HTMLElement, depth: number = 0): void {
-    let opener = `${'\t'.repeat(depth)}<${name}`
+    let opener = `<${name}`
 
     if (element.attributes) {
       // Loop through and build all data attributes
@@ -67,20 +72,24 @@ export default class JSON2HTML {
 
       for (const key in element.attributes) {
         const value = element.attributes[key]
-        opener += ` ${key}="${value}"`
+        // Short hand attributes (such as required | disabled)
+        if (isBoolean(value) && value === true) {
+          opener += ` ${key}`
+        } else {
+          opener += ` ${key}="${value}"`
+        }
       }
     }
 
-
     if (element.kind === ClosableKind.SelfClosable) {
-      this.output.push(`${opener} />`)
+      this.output.push({ depth, element: `${opener} />` } as OutputFormat)
       return
     }
 
-    this.output.push(`${opener}>`)
+    this.output.push({ depth, element: `${opener}>` } as OutputFormat)
 
     if (element.text) {
-      this.output.push(`${'\t'.repeat(depth + 1)}${element.text}`)
+      this.output.push({ depth: depth + 1, element: element.text } as OutputFormat)
     }
 
     // render each element in this elements tree
@@ -98,18 +107,20 @@ export default class JSON2HTML {
     }
 
     // close this element
-    this.output.push(`${'\t'.repeat(depth)}</${name}>`)
+    this.output.push({ depth, element: `</${name}>` } as OutputFormat)
   }
 
-  toArray(): string[] {
+  toArray(): object[] {
     return this.output
   }
 
   toString(): string {
-    return this.output.join('').replace(/\t/g, '')
+    return this.output.map(o => o.element).join('')
   }
 
   toPretty(): string {
-    return this.output.join('\n')
+    return this.output.map(o => {
+      return `${'\t'.repeat(o.depth)}${o.element}`
+    }).join('\n')
   }
 }

@@ -1,10 +1,15 @@
+interface OutputFormat {
+    depth: number;
+    element: string;
+}
 export default class JSON2HTML {
-    output: string[];
+    output: OutputFormat[];
     json: string;
     constructor(json: string);
     run(): JSON2HTML;
     private renderElement;
-    toArray(): string[];
+    toArray(): object[];
     toString(): string;
     toPretty(): string;
 }
+export {};
