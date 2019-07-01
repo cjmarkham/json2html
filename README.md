@@ -4,6 +4,9 @@ JSON2HTML
 ### Running
 `bin/run <input> [output]`
 
+For example:
+`bin/run input.json output.html`
+
 If no output is given, the HTML is output to stdout
 
 # Input
