@@ -1,19 +1,23 @@
-// TODO: Are we going to have one massive element interface here?
-interface HTMLElement {
-  name: string
-  class?: string[] | string
-  id?: string
-  text?: string
-  data?: DataAttributes
-  rel?: string
-  href?: string
-  elements?: HTMLElement[]
-  closes?: boolean | string
+enum ClosableKind {
+  Closable = "Closable",
+  SelfClosable = "SelfClosable",
+  NoClosable = "NoClosable"
 }
 
-// TODO: Unneeded?
-interface DataAttributes {
-  [prop: string]: string
+interface Attributes {
+  [prop: string]: string | Attributes
+}
+
+interface ElementDefinition {
+  [prop: string]: HTMLElement
+}
+
+interface HTMLElement {
+  kind: ClosableKind
+  attributes?: Attributes
+  children?: ElementDefinition[]
+  closes?: string | boolean
+  text?: string
 }
 
 export default class JSON2HTML {
@@ -27,48 +31,50 @@ export default class JSON2HTML {
   run(): JSON2HTML {
     const map = JSON.parse(this.json)
     for (const el of map) {
-      this.renderElement(el)
+      for (const name in el) {
+        this.renderElement(name, el[name])
+      }
     }
 
     return this
   }
 
-  private renderElement(element: HTMLElement, depth: number = 0): void {
-    let opener = `${'\t'.repeat(depth)}<${element.name}`
+  private renderElement(name: string, element: HTMLElement, depth: number = 0): void {
+    let opener = `${'\t'.repeat(depth)}<${name}`
 
-    if (element.class) {
-      if (Array.isArray(element.class)) {
-        opener += ` class="${element.class.join(' ')}"`
-      } else {
-        opener += ` class="${element.class}"`
+    if (element.attributes) {
+      // Loop through and build all data attributes
+      if (element.attributes.data && typeof element.attributes.data === 'object') {
+        for (const key in element.attributes.data) {
+          opener += ` data-${key}="${element.attributes.data[key]}"`
+        }
+
+        // So we don't add it again when we loop over attributes lower down
+        delete element.attributes.data
+      }
+
+      if (element.attributes.class) {
+        const classes = element.attributes.class
+        if (Array.isArray(classes)) {
+          opener += ` class="${classes.join(' ')}"`
+        } else {
+          opener += ` class="${classes}"`
+        }
+
+        // So we don't add it again when we loop over attributes lower down
+        delete element.attributes.class
+      }
+
+      for (const key in element.attributes) {
+        const value = element.attributes[key]
+        opener += ` ${key}="${value}"`
       }
     }
 
-    if (element.id) {
-      opener += ` id="${element.id}"`
-    }
 
-    // Loop through and build all data attributes
-    if (element.data) {
-      for (const key of Object.keys(element.data)) {
-        opener += ` data-${key}="${element.data[key]}"`
-      }
-    }
-
-    // TODO: Figure out how to actually add all the attributes
-    // rather than doing if statements everywhere
-    if (element.rel) {
-      opener += ` rel="${element.rel}"`
-    }
-    if (element.href) {
-      opener += ` href="${element.href}"`
-    }
-
-    if (element.hasOwnProperty('closes')) {
-      if (element.closes === 'self') {
-        this.output.push(`${opener} />`)
-        return
-      }
+    if (element.kind === ClosableKind.SelfClosable) {
+      this.output.push(`${opener} />`)
+      return
     }
 
     this.output.push(`${opener}>`)
@@ -78,21 +84,21 @@ export default class JSON2HTML {
     }
 
     // render each element in this elements tree
-    if (element.elements && element.elements.length > 0) {
-      for (const el of element.elements) {
-        this.renderElement(el, depth + 1)
+    if (element.children && element.children.length > 0) {
+      for (const el of element.children) {
+        for (const name in el) {
+          this.renderElement(name, el[name], depth + 1)
+        }
       }
     }
 
     // Don't close (such as !DOCTYPE)
-    if (element.hasOwnProperty('closes')) {
-      if (element.closes === false) {
-        return
-      }
+    if (element.kind === ClosableKind.NoClosable) {
+      return
     }
 
     // close this element
-    this.output.push(`${'\t'.repeat(depth)}</${element.name}>`)
+    this.output.push(`${'\t'.repeat(depth)}</${name}>`)
   }
 
   toArray(): string[] {
