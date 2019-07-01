@@ -1,4 +1,4 @@
-import { isBoolean } from 'util';
+import { isBoolean } from 'util'
 
 enum ClosableKind {
   Closable = "Closable",
@@ -48,36 +48,14 @@ export default class JSON2HTML {
     let opener = `<${name}`
 
     if (element.attributes) {
-      // Loop through and build all data attributes
-      if (element.attributes.data && typeof element.attributes.data === 'object') {
-        for (const key in element.attributes.data) {
-          opener += ` data-${key}="${element.attributes.data[key]}"`
-        }
+      opener = this.addElementAttributes(element, opener)
+    }
 
-        // So we don't add it again when we loop over attributes lower down
-        delete element.attributes.data
-      }
-
-      if (element.attributes.class) {
-        const classes = element.attributes.class
-        if (Array.isArray(classes)) {
-          opener += ` class="${classes.join(' ')}"`
-        } else {
-          opener += ` class="${classes}"`
-        }
-
-        // So we don't add it again when we loop over attributes lower down
-        delete element.attributes.class
-      }
-
-      for (const key in element.attributes) {
-        const value = element.attributes[key]
-        // Short hand attributes (such as required | disabled)
-        if (isBoolean(value) && value === true) {
-          opener += ` ${key}`
-        } else {
-          opener += ` ${key}="${value}"`
-        }
+    if (element.kind) {
+      if (!(element.kind in ClosableKind)) {
+        // An invalid "kind" was specified
+        console.error(`"${element.kind}" is not a valid element.kind`)
+        process.exit(1)
       }
     }
 
@@ -108,6 +86,47 @@ export default class JSON2HTML {
 
     // close this element
     this.output.push({ depth, element: `</${name}>` } as OutputFormat)
+  }
+
+  private addElementAttributes(element: HTMLElement, opener: string): string {
+    if (! element.attributes) {
+      return opener
+    }
+
+    // Loop through and build all data attributes
+    if (element.attributes.data && typeof element.attributes.data === 'object') {
+      for (const key in element.attributes.data) {
+        opener += ` data-${key}="${element.attributes.data[key]}"`
+      }
+
+      // So we don't add it again when we loop over attributes lower down
+      delete element.attributes.data
+    }
+
+    if (element.attributes.class) {
+      const classes = element.attributes.class
+      if (Array.isArray(classes)) {
+        opener += ` class="${classes.join(' ')}"`
+      } else {
+        opener += ` class="${classes}"`
+      }
+
+      // So we don't add it again when we loop over attributes lower down
+      delete element.attributes.class
+    }
+
+    // TODO: Do we need a way to verify the attributes?
+    for (const key in element.attributes) {
+      const value = element.attributes[key]
+      // Short hand attributes (such as required | disabled)
+      if (isBoolean(value) && value === true) {
+        opener += ` ${key}`
+      } else {
+        opener += ` ${key}="${value}"`
+      }
+    }
+
+    return opener
   }
 
   toArray(): object[] {

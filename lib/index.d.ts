@@ -8,6 +8,7 @@ export default class JSON2HTML {
     constructor(json: string);
     run(): JSON2HTML;
     private renderElement;
+    private addElementAttributes;
     toArray(): object[];
     toString(): string;
     toPretty(): string;
