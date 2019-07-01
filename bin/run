@@ -1,0 +1,21 @@
+#!/usr/bin/env node
+const { readFileSync, writeFileSync } = require('fs')
+
+const JSON2HTML = require('../lib/index.js').default
+
+const input = process.argv[2]
+if (!input) {
+  console.error('Please specify a JSON input file')
+  process.exit(1)
+}
+
+const output = process.argv[3]
+
+const json = readFileSync(input)
+const klass = new JSON2HTML(json)
+
+if (output) {
+  writeFileSync(output, klass.run().toPretty())
+  return
+}
+console.log(klass.run().toString())

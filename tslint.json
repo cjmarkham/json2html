@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "object-curly-spacing": true,
+    "no-console": false,
+    "no-implicit-dependencies": false,
+    "arrow-parens": true
+  }
+}
